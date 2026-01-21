@@ -2,9 +2,8 @@ name: Build Executable
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -12,8 +11,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.8, 3.9, '3.10', '3.11']
+        os: [ubuntu-latest]
+        python-version: ['3.10']
 
     steps:
     - uses: actions/checkout@v4
@@ -36,8 +35,12 @@ jobs:
       run: |
         python build.py
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+    - name: Create GitHub Release and upload assets
+      uses: softprops/action-gh-release@v2
       with:
-        name: auto-certbot-${{ matrix.os }}-${{ matrix.python-version }}
-        path: dist/
+        files: |
+          dist/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    

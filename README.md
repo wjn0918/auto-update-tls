@@ -1,24 +1,39 @@
-# 自动更新tls 证书
+# 自动更新 TLS 证书
 
-!!! note
+### 说明
 
-    nginx 目前使用systemctl 进行自动重启
+* **Nginx** 使用 `systemctl` 进行自动重启。
+* 配置 Nginx 在 `/.well-known/acme-challenge/` 路径上提供对证书验证的访问。
 
+### 配置 Nginx
 
-Nginx 配置里专门开一个 /\.well-known/acme-challenge/ 路径，指向一个空目录
+在 Nginx 配置文件中添加以下内容：
 
+```nginx
+location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+}
 ```
 
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+### 创建并设置目录权限
 
+1. 创建证书验证目录：
 
+   ```bash
+   sudo mkdir -p /var/www/certbot
+   ```
+
+2. 设置权限：
+
+   ```bash
+   sudo chown -R www-data:www-data /var/www/certbot
+   ```
+
+### 配置 `.env`
+
+在 `.env` 文件中指定 `webroot` 路径：
+
+```env
+WEBROOT_PATH=/var/www/certbot
 ```
 
-```
-sudo mkdir -p /var/www/certbot
-sudo chown -R www-data:www-data /var/www/certbot
-```
-
-.env 配置文件中指定webroot path

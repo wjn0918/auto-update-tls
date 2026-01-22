@@ -11,6 +11,7 @@ import os
 import argparse
 from datetime import datetime
 from dotenv import load_dotenv
+from prettytable import PrettyTable
 
 def check_certbot():
     """Check if certbot is installed"""
@@ -60,6 +61,61 @@ def obtain_certificate(domain, email, webroot=None, update_nginx=False):
         print(f"Failed to obtain certificate: {e}")
         print(f"Error output: {e.stderr}")
         return False
+
+def list_certificates():
+    """List all certificates managed by certbot"""
+    if not check_certbot():
+        print("Certbot is not installed.")
+        return
+
+    try:
+        result = subprocess.run(['certbot', 'certificates'], capture_output=True, text=True, check=True)
+        output = result.stdout
+
+        # Parse the output
+        certificates = []
+        lines = output.split('\n')
+        i = 0
+        while i < len(lines):
+            if lines[i].startswith('  Certificate Name:'):
+                cert_name = lines[i].split(':', 1)[1].strip()
+                domains = ''
+                expiry = ''
+                status = ''
+                i += 1
+                while i < len(lines) and not lines[i].startswith('  Certificate Name:') and lines[i].strip():
+                    if lines[i].startswith('    Domains:'):
+                        domains = lines[i].split(':', 1)[1].strip()
+                    elif lines[i].startswith('    Expiry Date:'):
+                        expiry_line = lines[i].split(':', 1)[1].strip()
+                        expiry = expiry_line.split(' (')[0].strip()
+                        status = expiry_line.split(' (')[1].rstrip(')') if ' (' in expiry_line else ''
+                    i += 1
+                certificates.append({
+                    'Certificate Name': cert_name,
+                    'Domains': domains,
+                    'Expiry Date': expiry,
+                    'Status': status
+                })
+            else:
+                i += 1
+
+        if not certificates:
+            print("No certificates found.")
+            return
+
+        # Create table
+        table = PrettyTable()
+        table.field_names = ['Certificate Name', 'Domains', 'Expiry Date', 'Status']
+        for cert in certificates:
+            table.add_row([cert['Certificate Name'], cert['Domains'], cert['Expiry Date'], cert['Status']])
+
+        print("Certificates managed by Certbot:")
+        print(table)
+
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to list certificates: {e}")
+        print(f"Error output: {e.stderr}")
 
 def check_certificate_status(domain):
     """Check if certificate exists for domain and return days remaining or None"""
@@ -153,21 +209,28 @@ def main():
     # Check if running in manual mode (with args) or auto mode
     if len(sys.argv) > 1:
         # Manual mode with command line arguments
-        parser = argparse.ArgumentParser(description="Auto-obtain Let's Encrypt SSL certificate or check certificate status")
-        parser.add_argument('--domain', required=True, help="Domain name for the certificate")
+        parser = argparse.ArgumentParser(description="Auto-obtain Let's Encrypt SSL certificate, check certificate status, or list certificates")
+        parser.add_argument('--domain', help="Domain name for the certificate (required for --check or obtaining)")
         parser.add_argument('--email', help="Email address for Let's Encrypt registration (required for obtaining certificate)")
         parser.add_argument('--webroot', help="Webroot path for webroot authentication (optional)")
         parser.add_argument('--check', action='store_true', help="Check certificate status instead of obtaining new certificate")
+        parser.add_argument('--list', action='store_true', help="List all certificates managed by certbot")
 
         args = parser.parse_args()
 
-        if args.check:
+        if args.list:
+            # List all certificates
+            list_certificates()
+        elif args.check:
             # Check certificate status
+            if not args.domain:
+                print("Error: --domain is required for --check")
+                sys.exit(1)
             check_certificate_status(args.domain)
         else:
             # Obtain certificate
-            if not args.email:
-                print("Error: --email is required when obtaining a certificate")
+            if not args.domain or not args.email:
+                print("Error: --domain and --email are required when obtaining a certificate")
                 sys.exit(1)
 
             if not check_certbot():

@@ -2,6 +2,7 @@
 
 # 未完成需求
 
+* 使用prettytable库绘制 --list 返回的Let’s Encrypt 证书信息
 
 
 # 已完成需求
@@ -13,6 +14,7 @@
 * 创建.env 配置文件
 * 通过配置文件配置1、需要监控的域名列表 2、到期剩余多少需要更新
 * 添加一个配置判断是否要certbot 是否要更新nginx
+* 增加 --list 用来展示目前certbot已经申请的Let’s Encrypt 证书信息
 
 
 # 操作条件

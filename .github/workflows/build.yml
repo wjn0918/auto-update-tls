@@ -39,6 +39,10 @@ jobs:
       run: |
         python build.py
 
+    - name: Make executable
+      run: |
+        chmod +x dist/*
+
     - name: Create GitHub Release and upload assets
       uses: softprops/action-gh-release@v2
       with:

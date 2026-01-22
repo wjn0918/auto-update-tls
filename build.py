@@ -9,7 +9,7 @@ import os
 
 def build_executable():
     """Build executable using PyInstaller"""
-    script_path = 'auto_certbot.py'
+    script_path = 'main.py'
 
     if not os.path.exists(script_path):
         print(f"Error: {script_path} not found")
